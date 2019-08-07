@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">LottoBill</string>
+    <string name="cur_num_text_tv">Number : </string>
+    <string name="small">sm</string>
+    <string name="big">B</string>
+    <string name="single">s</string>
+    <string name="dble">dd</string>
+    <string name="loading">Loading...</string>
+    <string name="error_fetching">An error occured. Please try again.</string>
+    <string name="last_bill_clip_data">Last bill copied</string>
+    <string name="error_fetching_data">"An error occurred while fetching data. It could be due to your internet connexion or our servers"</string>
+
+</resources>
