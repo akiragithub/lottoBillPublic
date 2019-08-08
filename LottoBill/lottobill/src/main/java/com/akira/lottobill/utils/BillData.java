@@ -1,5 +1,9 @@
 package com.akira.lottobill.utils;
 
+import android.content.Context;
+
+import com.akira.lottobill.R;
+
 import org.json.JSONObject;
 
 public class BillData {
@@ -11,16 +15,21 @@ public class BillData {
     private int secondNum;
     private int thirdNumber;
     private int result;
+    private String pairStatus;
+    private String sizeStatus;
+    private Context context;
 
     public BillData(){}
 
-    public BillData(String issueNumber, String openNumbers, long openDateTime)
+    public BillData(Context c, String issueNumber, String openNumbers, long openDateTime)
     {
         this.issueNumber = issueNumber;
         this.openNumbers = openNumbers;
         this.openDateTime = openDateTime;
+        context = c;
         separateNumbers(openNumbers);
         setResult();
+        setStatus();
     }
 
     private void separateNumbers(String openNumbers)
@@ -95,5 +104,21 @@ public class BillData {
 
     public void setOpenDateTime(long openDateTime) {
         this.openDateTime = openDateTime;
+    }
+
+    public void setStatus()
+    {
+        int isPair = (getResult()%2==0?1:0);
+        int isSmall = (getResult()<13?1:0);
+        pairStatus = (isPair==1?context.getString(R.string.dble):context.getString(R.string.single));
+        sizeStatus = (isSmall==1?context.getString(R.string.small):context.getString(R.string.big));
+    }
+
+    public String getPairStatus() {
+        return pairStatus;
+    }
+
+    public String getSizeStatus() {
+        return sizeStatus;
     }
 }

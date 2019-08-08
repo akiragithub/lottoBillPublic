@@ -3,8 +3,15 @@ package com.akira.lottobill;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Intent;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.RingtoneManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -16,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.akira.lottobill.adapters.MyDataAdapter;
+import com.akira.lottobill.adapters.MyPatternAdapter;
 import com.akira.lottobill.utils.BillData;
 import com.akira.lottobill.utils.MyJsonObjectUtils;
 import com.akira.lottobill.utils.MyPattern;
@@ -66,9 +74,12 @@ public class MainActivity extends AppCompatActivity {
     ImageView muteAlarmImageView;
     ArrayList<BillData> bills = new ArrayList<>();
     ArrayAdapter arrayAdapter;
+    ArrayAdapter patternListAdapter;
     BillData lastBill = new BillData();
     ArrayList<MyPattern> patterns = new ArrayList<>();
     static String DATA_LINK = "https://api.kai58a.com/data/jndpc28/last.json";
+    Boolean alarmIsMuted = false;
+    MediaPlayer mediaPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,10 +101,14 @@ public class MainActivity extends AppCompatActivity {
         addPatternImageView = findViewById(R.id.add_pattern);
         resetPatternImageView = findViewById(R.id.reset_pattern);
         muteAlarmImageView = findViewById(R.id.mute_alarm);
+        mediaPlayer = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
 
         //Lists and adapters
         arrayAdapter = new MyDataAdapter(this,R.layout.data_row,bills);
         dataListView.setAdapter(arrayAdapter);
+
+        patternListAdapter = new MyPatternAdapter(this, patterns);
+        patternListView.setAdapter(patternListAdapter);
 
         //Allowing (all) servers certificate
         // Because the server certificate was already expired at that time
@@ -103,10 +118,49 @@ public class MainActivity extends AppCompatActivity {
         loadLottoData();
 
         // filling patternList with default data
-        fillPatternsList();
+        fillPatternsList(30);
 
         //Listeners
+        muteAlarmImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+                //muteAlarm(audioManager);
+                if(mediaPlayer!=null)
+                {
+                    mediaPlayer.stop();
+                }
+            }
+        });
+        addPatternImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
+        alarmImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+                if (alarmIsMuted)
+                {
+                    unmuteAlarm(audioManager);
+                }
+                else {
+                    muteAlarm(audioManager);
+                }
+
+            }
+        });
+
         pullSwipeRefreshLayout.setOnRefreshListener(refreshListener);
+        resetPatternImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                fillPatternsList(30);
+                Toast.makeText(MainActivity.this,R.string.patterns_list_reset,Toast.LENGTH_LONG).show();
+            }
+        });
         copyImageView.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
@@ -127,12 +181,48 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void fillPatternsList()
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //On destory stop and release the media player
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+            mediaPlayer.release();
+        }
+    }
+
+    private void muteAlarm(AudioManager audioManager)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_MUTE,0);
+        }else {
+            audioManager.setStreamMute(AudioManager.STREAM_ALARM, true);
+        }
+        alarmImageView.setImageResource(R.drawable.ic_alarm_off_black_24dp);
+        alarmIsMuted = true;
+    }
+
+    private void unmuteAlarm(AudioManager audioManager)
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_UNMUTE,0);
+        }else {
+            audioManager.setStreamMute(AudioManager.STREAM_ALARM, false);
+        }
+        alarmImageView.setImageResource(R.drawable.ic_alarm_black_24dp);
+        alarmIsMuted = false;
+    }
+
+
+    private void fillPatternsList(int numberOfItems)
     {
         ArrayList<String> patternData = new ArrayList<>();
-        patternData = generatePatternData();
-
-        for(int i=0;i<10;i++)
+        patternData = generatePatternData(numberOfItems);
+        patterns.clear();
+        for(int i=1;i<numberOfItems;i++)
         {
             MyPattern myPattern = new MyPattern();
             myPattern.setPatternNumber(String.valueOf(i));
@@ -140,9 +230,54 @@ public class MainActivity extends AppCompatActivity {
             myPattern.setAlarmIsSet(false);
             patterns.add(myPattern);
         }
+        checkPatternMatch();
+        patternListAdapter.notifyDataSetChanged();
     }
 
-    private ArrayList<String> generatePatternData()
+    private void checkPatternMatch()
+    {
+
+        String mergedPairs = mergedPairsStatus();
+        String mergedSize = mergedSizeStatus();
+        String mergedStatus = mergedPairs+mergedSize;
+        for (MyPattern pattern: patterns) {
+            if (mergedStatus.contains(pattern.getPatternData()))
+            {
+                //Trigerring alarm
+                Log.d(Config.LOG_TAG,"Pattern Match found : "+pattern.getPatternData());
+                if(mediaPlayer!=null)
+                {
+                    mediaPlayer.prepareAsync();
+                    mediaPlayer.start();
+                }
+
+                //updating UI
+                pattern.setAlarmIsSet(true);
+                patternListAdapter.notifyDataSetChanged();
+            }
+        }
+    }
+
+    private String mergedPairsStatus()
+    {
+        String mergedPairs = "";
+        for (BillData billData:bills) {
+            mergedPairs+=billData.getPairStatus();
+        }
+        return mergedPairs;
+    }
+
+
+    private String mergedSizeStatus()
+    {
+        String mergedSize = "";
+        for (BillData billData:bills) {
+            mergedSize+=billData.getSizeStatus();
+        }
+        return mergedSize;
+    }
+
+    private ArrayList<String> generatePatternData(int numberOfItems)
     {
         ArrayList<String> patternDataList = new ArrayList<>();
         Random random = new Random();
@@ -152,21 +287,22 @@ public class MainActivity extends AppCompatActivity {
         String small = getString(R.string.small);
         String[] pairStatus = {single,dble};
         String[] sizeStatus = {small,big};
-        int statusChoice = random.nextInt(1);
+        int statusChoice = random.nextInt(2);
 
         // Launching a set of 10 rows
-        for(int i=0; i<10; i++)
+        for(int i=0; i<numberOfItems; i++)
         {
             String currentPatternData = "";
             for(int j=0; j<4; j++)
             {
-                int intChoice = random.nextInt(1);
+                int intChoice = random.nextInt(2);
                 //If statuschoice is 0, so the pattern set line is for pairsStatus
                 // if not, it is sizeStatus
-                Log.d(Config.LOG_TAG,"choice is "+intChoice);
+                Log.d(Config.LOG_TAG,"status choice is "+statusChoice);
                 String choice = (statusChoice==0?pairStatus[intChoice]:sizeStatus[intChoice]);
                 currentPatternData+=choice;
             }
+            Log.d(Config.LOG_TAG,"current data is : "+currentPatternData);
             patternDataList.add(currentPatternData);
         }
         return patternDataList;
@@ -209,9 +345,11 @@ public class MainActivity extends AppCompatActivity {
                String issue = MyJsonObjectUtils.getString(currentBill,"issue");
                String openNum = MyJsonObjectUtils.getString(currentBill,"openNum");
                long openDateTime = MyJsonObjectUtils.getLong(currentBill, "openDateTime");
-               BillData billData = new BillData(issue, openNum, openDateTime);
+               BillData billData = new BillData(this, issue, openNum, openDateTime);
                bills.add(billData);
             }
+            //BillData testBillData = new BillData("458745123","4,3,6",45124L);
+            //bills.add(testBillData);
             arrayAdapter.notifyDataSetChanged();
             updateUIData(bills);
             loadingTextView.setVisibility(View.GONE);

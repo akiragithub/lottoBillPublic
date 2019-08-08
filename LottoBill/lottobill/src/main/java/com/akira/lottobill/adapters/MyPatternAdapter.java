@@ -45,7 +45,8 @@ public class MyPatternAdapter extends ArrayAdapter<MyPattern> {
                 }
             MyPattern pattern = getItem(position);
             viewHolder.patternNumberTextView.setText(pattern.getPatternNumber());
-            viewHolder.patternDataTextView.setVisibility(pattern.getAlarmIsSet()?View.VISIBLE:View.INVISIBLE);
+            viewHolder.patternDataTextView.setText(pattern.getPatternData());
+            viewHolder.patternStatusImageView.setVisibility(pattern.getAlarmIsSet()?View.VISIBLE:View.INVISIBLE);
             return convertView;
     }
 }

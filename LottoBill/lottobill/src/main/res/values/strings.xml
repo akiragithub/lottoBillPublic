@@ -8,6 +8,7 @@
     <string name="loading">Loading...</string>
     <string name="error_fetching">An error occured. Please try again.</string>
     <string name="last_bill_clip_data">Last bill copied</string>
+    <string name="patterns_list_reset">Patterns List reset to default</string>
     <string name="error_fetching_data">"An error occurred while fetching data. It could be due to your internet connexion or our servers"</string>
 
 </resources>

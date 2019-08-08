@@ -1,6 +1,7 @@
 package com.akira.lottobill.adapters;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -51,19 +52,20 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         }else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-
         String dateTime = getFormattedDate(billData.getOpenDateTime());
         int sum = billData.getFirstNum()
                 +billData.getSecondNum()
                 +billData.getThirdNumber();
-        int isPair = (sum%2==0?1:0);
-        int isSmall = (sum<13?1:0);
+        String pairStatus = billData.getPairStatus();
+        String smallStatus = billData.getSizeStatus();
         viewHolder.dateTimeTextView.setText(dateTime);
-        Log.d(Config.LOG_TAG,"sum is : "+sum);
         viewHolder.sumTextView.setText(String.valueOf(sum));
-        viewHolder.isPairTextView.setText(String.valueOf(isPair));
-        viewHolder.isSmallTextView.setText(String.valueOf(isSmall));
-
+        viewHolder.isPairTextView.setText(pairStatus);
+        viewHolder.isSmallTextView.setText(smallStatus);
+        if(sum==13)
+        {
+            convertView.setBackgroundResource(R.color.colorPrimary);
+        }else convertView.setBackgroundResource(R.color.colorWhite);
         return convertView;
     }
 

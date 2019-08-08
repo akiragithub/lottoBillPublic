@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
     android:layout_width="match_parent"
     android:layout_height="0dp"
     android:layout_weight="12"
@@ -81,7 +81,6 @@
     </LinearLayout>
 
     <LinearLayout
-
         android:id="@+id/layout_2"
         android:orientation="horizontal"
         android:layout_width="match_parent"
@@ -95,29 +94,19 @@
             android:id="@+id/void_tv"
             android:layout_width="0dp"
             android:layout_weight="0.25"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_height="wrap_content"/>
 
         <FrameLayout
             android:id="@+id/first_num_fl"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/void_tv"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="wrap_content">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/first_round_imv"
                 android:layout_width="40dip"
                 android:layout_height="40dip"
                 android:src="@color/colorAccent"
-                app:riv_corner_radius="30dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:riv_corner_radius="30dp"/>
 
             <TextView
                 android:id="@+id/first_num_tv"
@@ -125,11 +114,7 @@
                 android:layout_height="wrap_content"
                 android:text="4"
                 android:layout_gravity="center"
-                android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="20sp"/>
 
         </FrameLayout>
 
@@ -141,29 +126,19 @@
             android:text="+"
             android:textAlignment="center"
             android:layout_gravity="center"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/first_num_fl"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"/>
 
         <FrameLayout
             android:id="@+id/second_num_fl"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/first_plus_tv"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="wrap_content">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/second_round_imv"
                 android:layout_width="40dip"
                 android:layout_height="40dip"
                 android:src="@color/colorAccent"
-                app:riv_corner_radius="30dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:riv_corner_radius="30dp"/>
 
             <TextView
                 android:id="@+id/second_num_tv"
@@ -171,11 +146,7 @@
                 android:layout_height="wrap_content"
                 android:text="4"
                 android:layout_gravity="center"
-                android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="20sp"/>
 
         </FrameLayout>
 
@@ -187,29 +158,19 @@
             android:text="+"
             android:textAlignment="center"
             android:layout_gravity="center"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/first_num_fl"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"/>
 
         <FrameLayout
             android:id="@+id/third_num_fl"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/second_plus_tv"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="wrap_content">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/third_round_imv"
                 android:layout_width="40dip"
                 android:layout_height="40dip"
                 android:src="@color/colorAccent"
-                app:riv_corner_radius="30dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:riv_corner_radius="30dp"/>
 
             <TextView
                 android:id="@+id/third_num_tv"
@@ -217,11 +178,7 @@
                 android:layout_height="wrap_content"
                 android:text="4"
                 android:layout_gravity="center"
-                android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="20sp" />
 
         </FrameLayout>
 
@@ -233,29 +190,19 @@
             android:text="="
             android:textAlignment="center"
             android:layout_gravity="center"
-            android:textSize="20sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/first_num_fl"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textSize="20sp"/>
 
         <FrameLayout
             android:id="@+id/result_num_fl"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/equal_tv"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="wrap_content">
 
             <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/result_round_imv"
                 android:layout_width="40dip"
                 android:layout_height="40dip"
                 android:src="@color/colorAccent"
-                app:riv_corner_radius="30dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:riv_corner_radius="30dp"/>
 
             <TextView
                 android:id="@+id/result_num_tv"
@@ -263,11 +210,7 @@
                 android:layout_height="wrap_content"
                 android:text="16"
                 android:layout_gravity="center"
-                android:textSize="20sp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="20sp"/>
 
         </FrameLayout>
 
@@ -277,78 +220,103 @@
             android:layout_weight="0.35"
             android:layout_height="40dip"
             android:src="@drawable/ic_content_copy_primary_24dp"
-            app:riv_corner_radius="10dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/result_num_fl"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:riv_corner_radius="10dp" />
 
         <TextView
             android:id="@+id/void_2_tv"
             android:layout_width="0dp"
             android:layout_weight="0.25"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_height="wrap_content" />
     </LinearLayout>
-
+    <View
+        android:id="@+id/first_horizontal_line"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:layout_marginTop="5dp"
+        android:background="@color/colorPrimary"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layout_2" >
+    </View>
     <LinearLayout
         android:id="@+id/layout_3"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="15dp"
+        android:layout_marginTop=".5dp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_2" >
+        app:layout_constraintTop_toBottomOf="@id/first_horizontal_line" >
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/pull_to_refresh"
-            android:orientation="horizontal"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent" >
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
             <LinearLayout
                 android:id="@+id/data_linear"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
                 app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/layout_2" >
+                app:layout_constraintTop_toBottomOf="@id/layout_2">
 
                 <TextView
                     android:id="@+id/loading_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/loading"
                     android:layout_gravity="center_horizontal"
                     android:layout_marginBottom="5dp"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintLeft_toLeftOf="parent" >
-                </TextView>
+                    android:text="@string/loading"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"/>
+
                 <ListView
                     android:id="@+id/data_lv"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginTop="10dp"
+                    android:layout_height="wrap_content"
                     app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/layout_2" >
-                </ListView>
+                    app:layout_constraintTop_toBottomOf="@id/layout_2"/>
             </LinearLayout>
-
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-        <ListView
-            android:id="@+id/pattern_lv"
+        <View
+            android:id="@+id/vertical_line"
             android:layout_width="0dp"
-            android:layout_weight="1"
+            android:layout_weight=".05"
             android:layout_height="match_parent"
+            android:background="@color/colorPrimary"
             app:layout_constraintLeft_toRightOf="@id/pull_to_refresh"
             app:layout_constraintTop_toTopOf="parent" >
-        </ListView>
+        </View>
+
+        <ScrollView
+            android:id="@+id/pattern_scroll_view"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/vertical_line"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ListView
+                android:id="@+id/pattern_lv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintLeft_toRightOf="@id/vertical_line"
+                app:layout_constraintTop_toTopOf="parent"/>
+        </ScrollView>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
+    <View
+        android:id="@+id/second_horizontal_line"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:background="@color/colorPrimary"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layout_3" >
+    </View>
+
     <LinearLayout
         android:id="@+id/layout_4"
         android:orientation="horizontal"
@@ -357,7 +325,7 @@
         android:layout_weight="1"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_3">
+        app:layout_constraintTop_toBottomOf="@id/second_horizontal_line">
 
         <ImageView
             android:id="@+id/add_pattern"
@@ -385,5 +353,4 @@
             app:layout_constraintTop_toTopOf="parent" />
 
     </LinearLayout>
-
 </LinearLayout>
