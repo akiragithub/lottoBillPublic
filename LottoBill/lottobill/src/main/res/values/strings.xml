@@ -9,6 +9,10 @@
     <string name="error_fetching">An error occured. Please try again.</string>
     <string name="last_bill_clip_data">Last bill copied</string>
     <string name="patterns_list_reset">Patterns List reset to default</string>
+    <string name="patterns_hint">Add patterns Here</string>
+    <string name="pairs">s/dd</string>
+    <string name="sizes">B/sm</string>
+    <string name="add_pattern">validate</string>
     <string name="error_fetching_data">"An error occurred while fetching data. It could be due to your internet connexion or our servers"</string>
 
 </resources>

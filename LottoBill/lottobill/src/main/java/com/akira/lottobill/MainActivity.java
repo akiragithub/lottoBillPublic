@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -14,9 +15,13 @@ import android.media.RingtoneManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -118,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         loadLottoData();
 
         // filling patternList with default data
-        fillPatternsList(30);
+        fillPatternsList(5);
 
         //Listeners
         muteAlarmImageView.setOnClickListener(new View.OnClickListener() {
@@ -135,9 +140,73 @@ public class MainActivity extends AppCompatActivity {
         addPatternImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                View dialogBoxView = LayoutInflater.from(MainActivity.this).inflate(R.layout.custom_dialog_box,null);
+                final AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                alertDialog.setView(dialogBoxView);
+                alertDialog.show();
+                final EditText patternEditText = dialogBoxView.findViewById(R.id.pattern_hint_et);
+                final Button pairsButton = dialogBoxView.findViewById(R.id.pairs_bt);
+                final Button sizesButton = dialogBoxView.findViewById(R.id.sizes_bt);
+                final Button pairButton = dialogBoxView.findViewById(R.id.pair_bt);
+                final Button sizeButton = dialogBoxView.findViewById(R.id.size_bt);
+                Button addPatternButton = dialogBoxView.findViewById(R.id.add_pattern_bt);
+                patternEditText.setKeyListener(null);
+                pairsButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        patternEditText.setText("");
+                        pairsButton.setClickable(false);
+                        sizesButton.setClickable(true);
+                        pairButton.setText(R.string.single);
+                        sizeButton.setText(R.string.dble);
+                    }
+                });
+                sizesButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        patternEditText.setText("");
+                        sizesButton.setClickable(false);
+                        pairsButton.setClickable(true);
+                        pairButton.setText(R.string.small);
+                        sizeButton.setText(R.string.big);
+                    }
+                });
+                pairButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String oldPattern = String.valueOf(patternEditText.getText());
+                        patternEditText.setText(oldPattern+pairButton.getText());
+                    }
+                });
+
+                sizeButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String oldPattern = String.valueOf(patternEditText.getText());
+                        patternEditText.setText(oldPattern+sizeButton.getText());
+                    }
+                });
+
+                addPatternButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String patternData = String.valueOf(patternEditText.getText());
+                        if (!TextUtils.isEmpty(patternData))
+                        {
+                            String patternNumber = String.valueOf(patterns.size()+1);
+                            MyPattern pattern = new MyPattern(patternNumber,patternData,false);
+                            patterns.add(pattern);
+                            patternListAdapter.notifyDataSetChanged();
+                            checkPatternMatch();
+                            alertDialog.dismiss();
+                        }
+                    }
+                });
 
             }
         });
+
+
         alarmImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -157,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
         resetPatternImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                fillPatternsList(30);
+                fillPatternsList(5);
                 Toast.makeText(MainActivity.this,R.string.patterns_list_reset,Toast.LENGTH_LONG).show();
             }
         });
@@ -241,13 +310,15 @@ public class MainActivity extends AppCompatActivity {
         String mergedSize = mergedSizeStatus();
         String mergedStatus = mergedPairs+mergedSize;
         for (MyPattern pattern: patterns) {
+            Log.d(Config.LOG_TAG, "merged status is : "+mergedStatus);
+            Log.d(Config.LOG_TAG, "current pattern is : "+pattern.getPatternData());
             if (mergedStatus.contains(pattern.getPatternData()))
             {
                 //Trigerring alarm
                 Log.d(Config.LOG_TAG,"Pattern Match found : "+pattern.getPatternData());
                 if(mediaPlayer!=null)
                 {
-                    mediaPlayer.prepareAsync();
+                    //mediaPlayer.prepareAsync();
                     mediaPlayer.start();
                 }
 
@@ -350,6 +421,7 @@ public class MainActivity extends AppCompatActivity {
             }
             //BillData testBillData = new BillData("458745123","4,3,6",45124L);
             //bills.add(testBillData);
+            checkPatternMatch();
             arrayAdapter.notifyDataSetChanged();
             updateUIData(bills);
             loadingTextView.setVisibility(View.GONE);
