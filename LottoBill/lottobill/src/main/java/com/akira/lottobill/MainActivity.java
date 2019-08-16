@@ -1,24 +1,34 @@
 package com.akira.lottobill;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,27 +39,22 @@ import android.widget.Toast;
 
 import com.akira.lottobill.adapters.MyDataAdapter;
 import com.akira.lottobill.adapters.MyPatternAdapter;
+import com.akira.lottobill.receivers.MyAlarmReceiver;
 import com.akira.lottobill.utils.BillData;
+import com.akira.lottobill.utils.MyDataFetcher;
 import com.akira.lottobill.utils.MyJsonObjectUtils;
 import com.akira.lottobill.utils.MyPattern;
-import com.android.volley.NetworkResponse;
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.ServerError;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpHeaderParser;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+import com.akira.lottobill.utils.MySharedPreferences;
+import com.akira.lottobill.utils.MyStringUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Random;
 
@@ -82,15 +87,30 @@ public class MainActivity extends AppCompatActivity {
     ArrayAdapter patternListAdapter;
     BillData lastBill = new BillData();
     ArrayList<MyPattern> patterns = new ArrayList<>();
-    static String DATA_LINK = "https://api.kai58a.com/data/jndpc28/last.json";
     Boolean alarmIsMuted = false;
     MediaPlayer mediaPlayer;
+    AlarmManager alarmManager ;
+    PendingIntent alarmPendingIntent ;
+    TextView countDownTextView;
+    private long newDataInterval = (3*60+45)*1000L;
+    private  long lastBillTime;
+    private MySharedPreferences mySharedPreferences;
+    private MyCountDown countDownTimer;
+    private static String PATTERNS_LIST_PREF_KEY = "patterns.key";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         //Initializing data
+        alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        //SharedPreferences
+        mySharedPreferences = new MySharedPreferences(this);
+
+        //Initializing UI Components;
         curNumTextView = findViewById(R.id.cur_num_tv);
         cureTimeTextView = findViewById(R.id.time_tv);
         alarmImageView = findViewById(R.id.alarm_imv);
@@ -106,7 +126,27 @@ public class MainActivity extends AppCompatActivity {
         addPatternImageView = findViewById(R.id.add_pattern);
         resetPatternImageView = findViewById(R.id.reset_pattern);
         muteAlarmImageView = findViewById(R.id.mute_alarm);
-        mediaPlayer = MediaPlayer.create(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+        countDownTextView = findViewById(R.id.count_down_tv);
+
+        //BroadCoast Management
+        LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                //countDownTimer.start();
+                if(Config.INTENT_FILTER_ACTION.equals(intent.getAction()))
+                {
+                    String response = intent.getStringExtra("response");
+                    if (response!=null)
+                    {
+                        formatToDataAndRefreshView(response);
+                    }else{
+                        loadingTextView.setText(R.string.error_fetching);
+                        dataListView.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this, R.string.error_fetching_data, Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        },new IntentFilter(Config.INTENT_FILTER_ACTION));
 
         //Lists and adapters
         arrayAdapter = new MyDataAdapter(this,R.layout.data_row,bills);
@@ -114,26 +154,57 @@ public class MainActivity extends AppCompatActivity {
 
         patternListAdapter = new MyPatternAdapter(this, patterns);
         patternListView.setAdapter(patternListAdapter);
+        patternListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+               final int position = i;
+                final AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).setItems(R.array.long_click_array, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setPositiveButton(R.string.add_pattern, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                patterns.remove(position);
+                            }
+                        });
+                        builder.setNegativeButton(R.string.cancel_pattern, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                            //Do nothing
+                            }
+                        });
+                        final AlertDialog alertDialog1 = builder.create();
+                        alertDialog1.setMessage(getString(R.string.confirm_delete_item_message));
+                        alertDialog1.show();
+                    }
+                }).create();
+                alertDialog.show();
+                return false;
+            }
+        });
 
         //Allowing (all) servers certificate
-        // Because the server certificate was already expired at that time
+        //Because the server certificate was already expired at that time
         NukeSSLCerts.nuke();
 
         //fetching data;
-        loadLottoData();
+        MyDataFetcher.fetchData(this);
 
         // filling patternList with default data
-        fillPatternsList(5);
+        restorePatterns(mySharedPreferences.getString(PATTERNS_LIST_PREF_KEY));
+        //fillPatternsList(30);
 
         //Listeners
         muteAlarmImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
                 //muteAlarm(audioManager);
                 if(mediaPlayer!=null)
                 {
                     mediaPlayer.stop();
+                    mediaPlayer.release();
+                    mediaPlayer = null;
                 }
             }
         });
@@ -141,8 +212,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 View dialogBoxView = LayoutInflater.from(MainActivity.this).inflate(R.layout.custom_dialog_box,null);
-                final AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
+                //final Dialog alertDialog = new Dialog(MainActivity.this, android.R.style.Theme_Translucent_NoTitleBar);
+                final AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Translucent_NoTitleBar).create();
                 alertDialog.setView(dialogBoxView);
+                //alertDialog.getWindow().setBackgroundDrawable(null);
+                //alertDialog.setContentView(dialogBoxView);
                 alertDialog.show();
                 final EditText patternEditText = dialogBoxView.findViewById(R.id.pattern_hint_et);
                 final Button pairsButton = dialogBoxView.findViewById(R.id.pairs_bt);
@@ -150,6 +224,8 @@ public class MainActivity extends AppCompatActivity {
                 final Button pairButton = dialogBoxView.findViewById(R.id.pair_bt);
                 final Button sizeButton = dialogBoxView.findViewById(R.id.size_bt);
                 Button addPatternButton = dialogBoxView.findViewById(R.id.add_pattern_bt);
+                Button cancelPatternButton = dialogBoxView.findViewById(R.id.cancel_pattern_bt);
+                Button deletePatternButton = dialogBoxView.findViewById(R.id.delete_pattern_bt);
                 patternEditText.setKeyListener(null);
                 pairsButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -197,8 +273,25 @@ public class MainActivity extends AppCompatActivity {
                             MyPattern pattern = new MyPattern(patternNumber,patternData,false);
                             patterns.add(pattern);
                             patternListAdapter.notifyDataSetChanged();
-                            checkPatternMatch();
+                            //checkPatternMatch();
                             alertDialog.dismiss();
+                        }
+                    }
+                });
+                cancelPatternButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        alertDialog.dismiss();
+                    }
+                });
+                deletePatternButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String oldText = String.valueOf(patternEditText.getText());
+                        if(!TextUtils.isEmpty(oldText))
+                        {
+                            String newText = oldText.substring(0,oldText.length()-1);
+                            patternEditText.setText(newText);
                         }
                     }
                 });
@@ -226,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
         resetPatternImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                fillPatternsList(5);
+                fillPatternsList(0);
                 Toast.makeText(MainActivity.this,R.string.patterns_list_reset,Toast.LENGTH_LONG).show();
             }
         });
@@ -253,21 +346,28 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //On destory stop and release the media player
+        //On destroy stop and release the media player
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.reset();
             mediaPlayer.release();
+            mediaPlayer = null;
         }
+        try{
+            countDownTimer.cancel();
+        }catch (Exception e){e.printStackTrace();}
+        savePatternsBeforeDestroy();
+        //mySharedPreferences.clear();
     }
+
 
     private void muteAlarm(AudioManager audioManager)
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
-            audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_MUTE,0);
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_MUTE,0);
         }else {
-            audioManager.setStreamMute(AudioManager.STREAM_ALARM, true);
+            audioManager.setStreamMute(AudioManager.STREAM_MUSIC, true);
         }
         alarmImageView.setImageResource(R.drawable.ic_alarm_off_black_24dp);
         alarmIsMuted = true;
@@ -277,9 +377,9 @@ public class MainActivity extends AppCompatActivity {
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
-            audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_UNMUTE,0);
+            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC,AudioManager.ADJUST_UNMUTE,0);
         }else {
-            audioManager.setStreamMute(AudioManager.STREAM_ALARM, false);
+            audioManager.setStreamMute(AudioManager.STREAM_MUSIC, false);
         }
         alarmImageView.setImageResource(R.drawable.ic_alarm_black_24dp);
         alarmIsMuted = false;
@@ -290,17 +390,46 @@ public class MainActivity extends AppCompatActivity {
     {
         ArrayList<String> patternData = new ArrayList<>();
         patternData = generatePatternData(numberOfItems);
-        patterns.clear();
-        for(int i=1;i<numberOfItems;i++)
+        restorePatterns(patternData);
+    }
+
+    private void restorePatterns(ArrayList<String> patternData)
+    {
+        if (patternData!=null&&!patternData.isEmpty())
         {
-            MyPattern myPattern = new MyPattern();
-            myPattern.setPatternNumber(String.valueOf(i));
-            myPattern.setPatternData(patternData.get(i));
-            myPattern.setAlarmIsSet(false);
-            patterns.add(myPattern);
+            patterns.clear();
+            for(int i=1;i<=patternData.size();i++)
+            {
+                String currentData = patternData.get(i-1);
+                if(!TextUtils.isEmpty(currentData))
+                {
+                    MyPattern myPattern = new MyPattern();
+                    myPattern.setPatternNumber(String.valueOf(i));
+                    myPattern.setPatternData(currentData);
+                    myPattern.setAlarmIsSet(false);
+                    patterns.add(myPattern);
+                }
+            }
+
+            patternListAdapter.notifyDataSetChanged();
         }
-        checkPatternMatch();
-        patternListAdapter.notifyDataSetChanged();
+    }
+
+    private void restorePatterns(String stringValueOfPattersDataList)
+    {
+        ArrayList<String> patternData = MyStringUtils.stringToArrayList(stringValueOfPattersDataList);
+        restorePatterns(patternData);
+    }
+
+    private void savePatternsBeforeDestroy()
+    {
+     if (patterns!=null&&!patterns.isEmpty()){
+         ArrayList<String> patternData = new ArrayList<>();
+         for (MyPattern pattern:patterns) {
+             patternData.add(pattern.getPatternData());
+         }
+         mySharedPreferences.putString(PATTERNS_LIST_PREF_KEY,String.valueOf(patternData));
+     }
     }
 
     private void checkPatternMatch()
@@ -308,25 +437,40 @@ public class MainActivity extends AppCompatActivity {
 
         String mergedPairs = mergedPairsStatus();
         String mergedSize = mergedSizeStatus();
-        String mergedStatus = mergedPairs+mergedSize;
+        //String mergedStatus = mergedPairs+mergedSize;
         for (MyPattern pattern: patterns) {
-            Log.d(Config.LOG_TAG, "merged status is : "+mergedStatus);
-            Log.d(Config.LOG_TAG, "current pattern is : "+pattern.getPatternData());
-            if (mergedStatus.contains(pattern.getPatternData()))
-            {
-                //Trigerring alarm
-                Log.d(Config.LOG_TAG,"Pattern Match found : "+pattern.getPatternData());
-                if(mediaPlayer!=null)
-                {
-                    //mediaPlayer.prepareAsync();
-                    mediaPlayer.start();
-                }
 
+            if (mergedPairs.startsWith(pattern.getPatternData())
+                    ||mergedSize.startsWith(pattern.getPatternData())
+            )
+            {
+                Log.d(Config.LOG_TAG,"pattern matched");
+                //Trigerring alarm
+                try {
+                    if(mediaPlayer==null)
+                    {
+                        mediaPlayer = MediaPlayer.create(this, R.raw.alarm);
+                    }else{
+                        mediaPlayer.stop();
+                        mediaPlayer.prepareAsync();
+                        //mediaPlayer.start();
+                    }
+                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mediaPlayer) {
+                            mediaPlayer.start();
+                        }
+                    });
+                }catch (IllegalStateException e)
+                {
+                    e.printStackTrace();
+                }
                 //updating UI
                 pattern.setAlarmIsSet(true);
-                patternListAdapter.notifyDataSetChanged();
+                //break;
             }
         }
+        patternListAdapter.notifyDataSetChanged();
     }
 
     private String mergedPairsStatus()
@@ -369,44 +513,24 @@ public class MainActivity extends AppCompatActivity {
                 int intChoice = random.nextInt(2);
                 //If statuschoice is 0, so the pattern set line is for pairsStatus
                 // if not, it is sizeStatus
-                Log.d(Config.LOG_TAG,"status choice is "+statusChoice);
                 String choice = (statusChoice==0?pairStatus[intChoice]:sizeStatus[intChoice]);
                 currentPatternData+=choice;
             }
-            Log.d(Config.LOG_TAG,"current data is : "+currentPatternData);
             patternDataList.add(currentPatternData);
         }
         return patternDataList;
     }
 
     private void loadLottoData() {
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, DATA_LINK,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        //DOTO refresList
-                        Log.d(Config.LOG_TAG, "new response : " + response);
-                        formatToDataAndRefreshView(response);
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        loadingTextView.setText(R.string.error_fetching);
-                        Log.d(Config.LOG_TAG, "error is : " + error.toString());
-                        Toast.makeText(MainActivity.this, R.string.error_fetching_data, Toast.LENGTH_LONG).show();
-                    }
-                });
-
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-        requestQueue.add(stringRequest);
+        //countDownTimer.start();
+        MyDataFetcher.fetchData(this);
     }
 
     private void formatToDataAndRefreshView(String apiResult)
     {
         JSONArray resultJsonArray = MyJsonObjectUtils.stringToJSONArray(apiResult);
         int arrayLength = resultJsonArray.length();
-
+        bills.clear();
         for (int i=0; i<arrayLength;i++)
         {
             JSONObject currentBill = (JSONObject)MyJsonObjectUtils.getObjectFromJsonArray(
@@ -419,34 +543,59 @@ public class MainActivity extends AppCompatActivity {
                BillData billData = new BillData(this, issue, openNum, openDateTime);
                bills.add(billData);
             }
-            //BillData testBillData = new BillData("458745123","4,3,6",45124L);
-            //bills.add(testBillData);
-            checkPatternMatch();
-            arrayAdapter.notifyDataSetChanged();
-            updateUIData(bills);
-            loadingTextView.setVisibility(View.GONE);
         }
+        checkPatternMatch();
+        arrayAdapter.notifyDataSetChanged();
+        updateUIData(bills);
+        loadingTextView.setVisibility(View.GONE);
+        dataListView.setVisibility(View.VISIBLE);
+        try{
+            countDownTimer.cancel();
+        }catch (Exception e){e.printStackTrace();}
+        countDownTimer = new MyCountDown(getRemaining(),1000);
+        countDownTimer.start();
+    }
 
+    private long getFirstTimetoLaunch()
+    {
+        long currentTimeMillis = System.currentTimeMillis();
+        long remaining = getRemaining();
+        //alternating fecthing interval between 3:30 and 4:00;
+        return currentTimeMillis + remaining;
+    }
+
+    private long getRemaining()
+    {
+        lastBillTime = mySharedPreferences.getLong("lastBillTime");
+        long currentTime = System.currentTimeMillis();
+        long rem = (lastBillTime + newDataInterval)-currentTime;
+        return rem;
     }
 
     private void updateUIData(ArrayList<BillData> bills)
     {
-        lastBill = bills.get(0);
-        if (lastBill!=null)
+        if(bills!=null&&bills.size()>0)
         {
-            int firstNum = lastBill.getFirstNum();
-            int secondNum = lastBill.getSecondNum();
-            int thirdNum = lastBill.getThirdNumber();
-            int sum = firstNum + secondNum + thirdNum;
-            String date = getFormattedDate(lastBill.getOpenDateTime());
-            String billIssueNumber = lastBill.getIssueNumber();
+            lastBill = bills.get(0);
+            if (lastBill!=null)
+            {
+                int firstNum = lastBill.getFirstNum();
+                int secondNum = lastBill.getSecondNum();
+                int thirdNum = lastBill.getThirdNumber();
+                int sum = firstNum + secondNum + thirdNum;
+                lastBillTime = lastBill.getOpenDateTime();
+                mySharedPreferences.putLong("lastBillTime",lastBillTime);
+                String date = getFormattedDate(lastBill.getOpenDateTime());
+                String billIssueNumber = lastBill.getIssueNumber();
 
-            firstNumTextView.setText(String.valueOf(firstNum));
-            secondNumTextView.setText(String.valueOf(secondNum));
-            thirdNewTextView.setText(String.valueOf(thirdNum));
-            resultTextView.setText(String.valueOf(sum));
-            cureTimeTextView.setText(date);
-            curNumTextView.setText(billIssueNumber);
+                firstNumTextView.setText(String.valueOf(firstNum));
+                secondNumTextView.setText(String.valueOf(secondNum));
+                thirdNewTextView.setText(String.valueOf(thirdNum));
+                resultTextView.setText(String.valueOf(sum));
+                cureTimeTextView.setText(date);
+                curNumTextView.setText(billIssueNumber);
+            }
+
         }
     }
     private String getFormattedDate(long billdate)
@@ -454,7 +603,6 @@ public class MainActivity extends AppCompatActivity {
         Date date = new Date(billdate);
         SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yy HH:mm:ss");
         String string = dateFormat.format(date);
-        Log.d(Config.LOG_TAG,"dateformat is : "+string);
         return string;
     }
 
@@ -473,6 +621,7 @@ public class MainActivity extends AppCompatActivity {
             },3_000);
         }
     };
+
 
         public static class NukeSSLCerts {
         public static void nuke() {
@@ -503,6 +652,32 @@ public class MainActivity extends AppCompatActivity {
                 });
             } catch (Exception e) {
             }
+        }
+    }
+
+    private class MyCountDown extends CountDownTimer
+    {
+        long totalTime;
+        public MyCountDown(long totalTime,long interval)
+        {
+            super(totalTime,interval);
+            this.totalTime = totalTime;
+        }
+
+        @Override
+        public void onTick(long l) {
+
+            long minutes = l/(1000*60);
+            long secondes = l/1000-60*minutes;
+            String toShow = minutes+":"+secondes;
+            countDownTextView.setText(toShow);
+
+        }
+
+        @Override
+        public void onFinish() {
+            //countDownTimer.start();
+            MyDataFetcher.fetchData(MainActivity.this);
         }
     }
 }

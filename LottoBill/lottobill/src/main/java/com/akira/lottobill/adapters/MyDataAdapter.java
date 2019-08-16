@@ -12,6 +12,7 @@ import android.widget.TextView;
 import com.akira.lottobill.Config;
 import com.akira.lottobill.R;
 import com.akira.lottobill.utils.BillData;
+import com.makeramen.roundedimageview.RoundedImageView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         private TextView sumTextView;
         private TextView isSmallTextView;
         private TextView isPairTextView;
+        private RoundedImageView firstRoundedImageView;
+        private RoundedImageView secondRoundedImageView;
     }
 
     @Override
@@ -48,6 +51,8 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
             viewHolder.sumTextView = convertView.findViewById(R.id.sum_tv);
             viewHolder.isSmallTextView = convertView.findViewById(R.id.first_status_tv);
             viewHolder.isPairTextView = convertView.findViewById(R.id.second_status_tv);
+            viewHolder.firstRoundedImageView = convertView.findViewById(R.id.first_round_imv_2);
+            viewHolder.secondRoundedImageView = convertView.findViewById(R.id.second_round_imv_2);
             convertView.setTag(viewHolder);
         }else {
             viewHolder = (ViewHolder) convertView.getTag();
@@ -62,10 +67,11 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         viewHolder.sumTextView.setText(String.valueOf(sum));
         viewHolder.isPairTextView.setText(pairStatus);
         viewHolder.isSmallTextView.setText(smallStatus);
-        if(sum==13)
-        {
-            convertView.setBackgroundResource(R.color.colorPrimary);
-        }else convertView.setBackgroundResource(R.color.colorWhite);
+        if(sum%2==0){
+            viewHolder.secondRoundedImageView.setImageResource(R.color.colorPair);
+        }else {
+            viewHolder.secondRoundedImageView.setImageResource(R.color.colorNonPair);
+        }
         return convertView;
     }
 
@@ -74,7 +80,7 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         Date date = new Date(billdate);
         SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         String string = dateFormat.format(date);
-        Log.d(Config.LOG_TAG,"dateformat is : "+string);
+        //Log.d(Config.LOG_TAG,"dateformat is : "+string);
         return string;
     }
 

@@ -109,7 +109,7 @@ public class BillData {
     public void setStatus()
     {
         int isPair = (getResult()%2==0?1:0);
-        int isSmall = (getResult()<13?1:0);
+        int isSmall = (getResult()<=13?1:0);
         pairStatus = (isPair==1?context.getString(R.string.dble):context.getString(R.string.single));
         sizeStatus = (isSmall==1?context.getString(R.string.small):context.getString(R.string.big));
     }

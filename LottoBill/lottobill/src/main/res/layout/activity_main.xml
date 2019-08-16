@@ -6,22 +6,13 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
-<androidx.constraintlayout.widget.ConstraintLayout
-    android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="12"
-    tools:context=".MainActivity">
-
     <LinearLayout
         android:id="@+id/layout_1"
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
+        android:layout_height="0dp"
+        android:layout_weight=".5"
+        android:layout_marginTop="10dp">
         <TextView
             android:id="@+id/cur_num_text_tv"
             android:layout_width="0dp"
@@ -33,7 +24,7 @@
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
+2
         <TextView
             android:id="@+id/cur_num_tv"
             android:layout_width="0dp"
@@ -84,11 +75,17 @@
         android:id="@+id/layout_2"
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_1">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="10dp">
+
+        <TextView
+            android:id="@+id/count_down_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginLeft="10dp"
+            />
 
         <TextView
             android:id="@+id/void_tv"
@@ -101,7 +98,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content">
 
-            <com.makeramen.roundedimageview.RoundedImageView
+           - <com.makeramen.roundedimageview.RoundedImageView
                 android:id="@+id/first_round_imv"
                 android:layout_width="40dip"
                 android:layout_height="40dip"
@@ -241,91 +238,65 @@
         android:id="@+id/layout_3"
         android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="9"
+        android:layout_marginTop=".5dp">
+
+    <LinearLayout
+        android:id="@+id/layout_3_first"
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:layout_marginTop=".5dp"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@id/first_horizontal_line" >
+        <TextView
+            android:id="@+id/loading_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="5dp"
+            android:text="@string/loading"/>
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/pull_to_refresh"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1">
-
-            <LinearLayout
-                android:id="@+id/data_linear"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/layout_2">
-
-                <TextView
-                    android:id="@+id/loading_tv"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="5dp"
-                    android:text="@string/loading"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"/>
-
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
                 <ListView
                     android:id="@+id/data_lv"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/layout_2"/>
-            </LinearLayout>
+                    android:layout_height="wrap_content" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        </LinearLayout>
         <View
             android:id="@+id/vertical_line"
             android:layout_width="0dp"
             android:layout_weight=".05"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
             app:layout_constraintLeft_toRightOf="@id/pull_to_refresh"
             app:layout_constraintTop_toTopOf="parent" >
         </View>
-
-        <ScrollView
-            android:id="@+id/pattern_scroll_view"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:fillViewport="true"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/vertical_line"
-            app:layout_constraintTop_toTopOf="parent">
-
             <ListView
                 android:id="@+id/pattern_lv"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:layout_constraintLeft_toRightOf="@id/vertical_line"
-                app:layout_constraintTop_toTopOf="parent"/>
-        </ScrollView>
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
     </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
     <View
         android:id="@+id/second_horizontal_line"
         android:layout_width="match_parent"
         android:layout_height="5dp"
-        android:background="@color/colorPrimary"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_3" >
+        android:background="@color/colorPrimary">
     </View>
-
     <LinearLayout
         android:id="@+id/layout_4"
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/second_horizontal_line">
+        android:layout_weight="1">
 
         <ImageView
             android:id="@+id/add_pattern"
@@ -351,6 +322,5 @@
             android:src="@drawable/ic_volume_off_accent_24dp"
             app:layout_constraintLeft_toRightOf="@id/add_pattern"
             app:layout_constraintTop_toTopOf="parent" />
-
     </LinearLayout>
 </LinearLayout>

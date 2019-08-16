@@ -13,6 +13,11 @@
     <string name="pairs">s/dd</string>
     <string name="sizes">B/sm</string>
     <string name="add_pattern">validate</string>
+    <string name="cancel_pattern">Cancel</string>
+    <string name="delete_pattern_elt">Delete</string>
     <string name="error_fetching_data">"An error occurred while fetching data. It could be due to your internet connexion or our servers"</string>
-
+    <string name="confirm_delete_item_message">"Do you really want to delete item ? "</string>
+    <string-array name="long_click_array">
+        <item>"Delete"</item>
+    </string-array>
 </resources>

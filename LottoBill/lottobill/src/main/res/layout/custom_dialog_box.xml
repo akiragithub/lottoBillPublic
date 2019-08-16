@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
     android:orientation="horizontal">
 
     <LinearLayout
@@ -36,7 +36,6 @@
         android:id="@+id/buttons_layout_center"
         android:layout_width="0dp"
         android:layout_weight="3"
-        android:background="@color/colorPrimary"
         android:layout_height="80dp">
 
         <EditText
@@ -47,16 +46,41 @@
             android:hint="@string/patterns_hint"
             android:textAlignment="center">
         </EditText>
-        <Button
-            android:id="@+id/add_pattern_bt"
+        <LinearLayout
+            android:orientation="horizontal"
+            android:id="@+id/buttons_layout_center_2"
             android:layout_marginTop="3dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/add_pattern"
-            android:textAlignment="center"
-            android:background="@drawable/rounded_corners_accent">
-        </Button>
+            android:layout_height="40dp">
 
+            <Button
+                android:id="@+id/add_pattern_bt"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/add_pattern"
+                android:textAlignment="center"
+                android:background="@drawable/rounded_corners_accent">
+            </Button>
+            <Button
+                android:id="@+id/cancel_pattern_bt"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel_pattern"
+                android:textAlignment="center"
+                android:background="@drawable/rounded_corners_accent">
+            </Button>
+            <Button
+                android:id="@+id/delete_pattern_bt"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="@string/delete_pattern_elt"
+                android:textAlignment="center"
+                android:background="@drawable/rounded_corners_accent">
+            </Button>
+        </LinearLayout>
     </LinearLayout>
     <LinearLayout
         android:orientation="vertical"

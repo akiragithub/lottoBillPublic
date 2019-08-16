@@ -47,6 +47,7 @@ public class MyPatternAdapter extends ArrayAdapter<MyPattern> {
             viewHolder.patternNumberTextView.setText(pattern.getPatternNumber());
             viewHolder.patternDataTextView.setText(pattern.getPatternData());
             viewHolder.patternStatusImageView.setVisibility(pattern.getAlarmIsSet()?View.VISIBLE:View.INVISIBLE);
+            convertView.setBackgroundResource(pattern.getAlarmIsSet()?R.color.colorAccent:R.color.colorWhite);
             return convertView;
     }
 }

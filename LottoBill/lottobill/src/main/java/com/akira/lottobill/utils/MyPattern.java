@@ -1,5 +1,9 @@
 package com.akira.lottobill.utils;
 
+import android.util.Log;
+
+import org.json.JSONObject;
+
 public class MyPattern {
     private String patternNumber;
     private String patternData;
@@ -43,5 +47,14 @@ public class MyPattern {
 
     public void setAlarmIsSet(Boolean alarmIsSet) {
         this.alarmIsSet = alarmIsSet;
+    }
+
+    @Override
+    public String toString() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject = MyJsonObjectUtils.put(jsonObject,"patternNum",getPatternNumber());
+        jsonObject = MyJsonObjectUtils.put(jsonObject,"patternData", getPatternData());
+        jsonObject = MyJsonObjectUtils.put(jsonObject, "alarmIsSet", getAlarmIsSet());
+        return jsonObject.toString();
     }
 }
