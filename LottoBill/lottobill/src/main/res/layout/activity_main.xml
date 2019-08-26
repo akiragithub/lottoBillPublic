@@ -246,7 +246,7 @@
         android:id="@+id/layout_3_first"
         android:orientation="vertical"
         android:layout_width="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:layout_height="match_parent"
         android:layout_marginTop=".5dp"
         app:layout_constraintRight_toRightOf="parent"

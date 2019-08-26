@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">LottoBill</string>
     <string name="cur_num_text_tv">Number : </string>
-    <string name="small">sm</string>
+    <string name="small">m</string>
     <string name="big">B</string>
     <string name="single">s</string>
     <string name="dble">dd</string>
@@ -11,12 +11,15 @@
     <string name="patterns_list_reset">Patterns List reset to default</string>
     <string name="patterns_hint">Add patterns Here</string>
     <string name="pairs">s/dd</string>
-    <string name="sizes">B/sm</string>
+    <string name="sizes">B/m</string>
     <string name="add_pattern">validate</string>
     <string name="cancel_pattern">Cancel</string>
     <string name="delete_pattern_elt">Delete</string>
     <string name="error_fetching_data">"An error occurred while fetching data. It could be due to your internet connexion or our servers"</string>
     <string name="confirm_delete_item_message">"Do you really want to delete item ? "</string>
+    <string name="confirm_reset_message">"Do you really want to reset ? "</string>
+    <string name="new_alarm">New Pattern Match</string>
+    <string name="text_ok">OK</string>
     <string-array name="long_click_array">
         <item>"Delete"</item>
     </string-array>

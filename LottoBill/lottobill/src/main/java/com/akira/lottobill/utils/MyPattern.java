@@ -5,7 +5,7 @@ import android.util.Log;
 import org.json.JSONObject;
 
 public class MyPattern {
-    private String patternNumber;
+
     private String patternData;
     private Boolean alarmIsSet;
 
@@ -13,20 +13,15 @@ public class MyPattern {
     {
     }
 
-    public MyPattern(String patternNumber, String patternData, Boolean alarmIsSet)
+    public MyPattern(String patternData, Boolean alarmIsSet)
     {
-        this.patternNumber = patternNumber;
         this.patternData = patternData;
         this.alarmIsSet = alarmIsSet;
     }
 
-    public MyPattern(String patternNumber, String patternData)
+    public MyPattern(String patternData)
     {
-        new MyPattern(patternNumber, patternData, Boolean.FALSE);
-    }
-
-    public String getPatternNumber() {
-        return patternNumber;
+        new MyPattern(patternData, Boolean.FALSE);
     }
 
     public String getPatternData() {
@@ -37,9 +32,6 @@ public class MyPattern {
         return alarmIsSet;
     }
 
-    public void setPatternNumber(String patternNumber) {
-        this.patternNumber = patternNumber;
-    }
 
     public void setPatternData(String patternData) {
         this.patternData = patternData;
@@ -52,7 +44,6 @@ public class MyPattern {
     @Override
     public String toString() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject = MyJsonObjectUtils.put(jsonObject,"patternNum",getPatternNumber());
         jsonObject = MyJsonObjectUtils.put(jsonObject,"patternData", getPatternData());
         jsonObject = MyJsonObjectUtils.put(jsonObject, "alarmIsSet", getAlarmIsSet());
         return jsonObject.toString();

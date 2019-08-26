@@ -19,10 +19,13 @@ import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -39,7 +42,6 @@ import android.widget.Toast;
 
 import com.akira.lottobill.adapters.MyDataAdapter;
 import com.akira.lottobill.adapters.MyPatternAdapter;
-import com.akira.lottobill.receivers.MyAlarmReceiver;
 import com.akira.lottobill.utils.BillData;
 import com.akira.lottobill.utils.MyDataFetcher;
 import com.akira.lottobill.utils.MyJsonObjectUtils;
@@ -92,11 +94,16 @@ public class MainActivity extends AppCompatActivity {
     AlarmManager alarmManager ;
     PendingIntent alarmPendingIntent ;
     TextView countDownTextView;
-    private long newDataInterval = (3*60+45)*1000L;
+    private long newDataInterval = (4*60)*1000L;
     private  long lastBillTime;
     private MySharedPreferences mySharedPreferences;
     private MyCountDown countDownTimer;
     private static String PATTERNS_LIST_PREF_KEY = "patterns.key";
+    private static long MINIMAL_TIME_FOR_ALARM = 2*1000L;
+    private long timeToSleep = 2000L;
+    private AudioManager audioManager ;
+    private Boolean haveToCheck = true;
+    static AlertDialog alertDialogStat = null;
 
 
     @Override
@@ -106,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Initializing data
         alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
 
         //SharedPreferences
         mySharedPreferences = new MySharedPreferences(this);
@@ -128,6 +136,18 @@ public class MainActivity extends AppCompatActivity {
         muteAlarmImageView = findViewById(R.id.mute_alarm);
         countDownTextView = findViewById(R.id.count_down_tv);
 
+        //Ask for optimization
+        requestOptimization();
+
+        //recover previous state
+        try{
+            alarmIsMuted = (Boolean) mySharedPreferences.getBoolean("mute");
+            Log.d(Config.LOG_TAG,"mutedAlarm previous state is : "+alarmIsMuted);
+            if (alarmIsMuted){muteAlarm();} else unmuteAlarm();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
         //BroadCoast Management
         LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver() {
             @Override
@@ -135,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
                 //countDownTimer.start();
                 if(Config.INTENT_FILTER_ACTION.equals(intent.getAction()))
                 {
+                    Log.d(Config.LOG_TAG,"broadcoast received");
                     String response = intent.getStringExtra("response");
                     if (response!=null)
                     {
@@ -166,6 +187,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 patterns.remove(position);
+                                savePatternsBeforeDestroy();
+                                patternListAdapter.notifyDataSetChanged();
                             }
                         });
                         builder.setNegativeButton(R.string.cancel_pattern, new DialogInterface.OnClickListener() {
@@ -180,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }).create();
                 alertDialog.show();
-                return false;
+                return true;
             }
         });
 
@@ -189,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
         NukeSSLCerts.nuke();
 
         //fetching data;
-        MyDataFetcher.fetchData(this);
+        loadLottoData(timeToSleep);
 
         // filling patternList with default data
         restorePatterns(mySharedPreferences.getString(PATTERNS_LIST_PREF_KEY));
@@ -270,10 +293,10 @@ public class MainActivity extends AppCompatActivity {
                         if (!TextUtils.isEmpty(patternData))
                         {
                             String patternNumber = String.valueOf(patterns.size()+1);
-                            MyPattern pattern = new MyPattern(patternNumber,patternData,false);
+                            MyPattern pattern = new MyPattern(patternData,false);
                             patterns.add(pattern);
                             patternListAdapter.notifyDataSetChanged();
-                            //checkPatternMatch();
+                            savePatternsBeforeDestroy();
                             alertDialog.dismiss();
                         }
                     }
@@ -303,14 +326,14 @@ public class MainActivity extends AppCompatActivity {
         alarmImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
                 if (alarmIsMuted)
                 {
-                    unmuteAlarm(audioManager);
+                    unmuteAlarm();
                 }
                 else {
-                    muteAlarm(audioManager);
+                    muteAlarm();
                 }
+                saveMuteState();
 
             }
         });
@@ -319,8 +342,17 @@ public class MainActivity extends AppCompatActivity {
         resetPatternImageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                fillPatternsList(0);
-                Toast.makeText(MainActivity.this,R.string.patterns_list_reset,Toast.LENGTH_LONG).show();
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setMessage(R.string.confirm_reset_message);
+                builder.setPositiveButton(R.string.add_pattern, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        fillPatternsList(0);
+                        Toast.makeText(MainActivity.this,R.string.patterns_list_reset,Toast.LENGTH_LONG).show();
+                    }
+                });
+                builder.setNegativeButton(R.string.cancel_pattern,null);
+                builder.create().show();
             }
         });
         copyImageView.setOnClickListener(
@@ -346,22 +378,58 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //On destroy stop and release the media player
-        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-            mediaPlayer.reset();
-            mediaPlayer.release();
-            mediaPlayer = null;
+        Log.d(Config.LOG_TAG,"activity being destroyed");
+        saveAndReleaseEverything();
+
+    }
+
+    private void requestOptimization(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+        {
+            PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
+            String packageName = getPackageName();
+            if(!pm.isIgnoringBatteryOptimizations(packageName));
+            {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:"+packageName));
+                startActivity(intent);
+            }
         }
+    }
+
+    private void saveAndReleaseEverything()
+    {
+        Log.d(Config.LOG_TAG,"we are in tne destroy");
+        try {
+            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+                mediaPlayer.reset();
+                mediaPlayer.release();
+                mediaPlayer = null;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        //handle countDown
         try{
             countDownTimer.cancel();
         }catch (Exception e){e.printStackTrace();}
+        //saveAndReleaseEverything();
+        //save patternsState;
         savePatternsBeforeDestroy();
-        //mySharedPreferences.clear();
+        //save alarmMuted state
+        saveMuteState();
+        Log.d(Config.LOG_TAG,"we saved everything");
+    }
+
+    private void saveMuteState(){
+        mySharedPreferences.putBoolean("mute",alarmIsMuted);
     }
 
 
-    private void muteAlarm(AudioManager audioManager)
+
+    private void muteAlarm()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
@@ -373,7 +441,7 @@ public class MainActivity extends AppCompatActivity {
         alarmIsMuted = true;
     }
 
-    private void unmuteAlarm(AudioManager audioManager)
+    private void unmuteAlarm()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
         {
@@ -395,24 +463,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void restorePatterns(ArrayList<String> patternData)
     {
+        patterns.clear();
         if (patternData!=null&&!patternData.isEmpty())
         {
-            patterns.clear();
-            for(int i=1;i<=patternData.size();i++)
+            for(int j=0;j<patternData.size();j++)
             {
-                String currentData = patternData.get(i-1);
+                String currentData = patternData.get(j);
                 if(!TextUtils.isEmpty(currentData))
                 {
                     MyPattern myPattern = new MyPattern();
-                    myPattern.setPatternNumber(String.valueOf(i));
-                    myPattern.setPatternData(currentData);
+                    myPattern.setPatternData(currentData.trim());
                     myPattern.setAlarmIsSet(false);
                     patterns.add(myPattern);
                 }
             }
-
-            patternListAdapter.notifyDataSetChanged();
         }
+        patternListAdapter.notifyDataSetChanged();
+        savePatternsBeforeDestroy();
     }
 
     private void restorePatterns(String stringValueOfPattersDataList)
@@ -423,54 +490,73 @@ public class MainActivity extends AppCompatActivity {
 
     private void savePatternsBeforeDestroy()
     {
+        ArrayList<String> patternData = new ArrayList<>();
      if (patterns!=null&&!patterns.isEmpty()){
-         ArrayList<String> patternData = new ArrayList<>();
          for (MyPattern pattern:patterns) {
              patternData.add(pattern.getPatternData());
          }
-         mySharedPreferences.putString(PATTERNS_LIST_PREF_KEY,String.valueOf(patternData));
      }
+        mySharedPreferences.putString(PATTERNS_LIST_PREF_KEY,String.valueOf(patternData));
+        Log.d(Config.LOG_TAG,"PatternsList saved");
     }
 
     private void checkPatternMatch()
     {
-
         String mergedPairs = mergedPairsStatus();
         String mergedSize = mergedSizeStatus();
+        String reversePairs = MyStringUtils.reverseString(mergedPairs);
+        String reverseSize = MyStringUtils.reverseString(mergedSize);
         //String mergedStatus = mergedPairs+mergedSize;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext())
+                .setMessage(R.string.new_alarm)
+                .setNeutralButton(R.string.text_ok,null);
+        alertDialogStat = builder.create();
         for (MyPattern pattern: patterns) {
-
-            if (mergedPairs.startsWith(pattern.getPatternData())
-                    ||mergedSize.startsWith(pattern.getPatternData())
+            String patternData = pattern.getPatternData().trim();
+            Log.d(Config.LOG_TAG,"pattern is : "+patternData);
+            if (reversePairs.endsWith(patternData)
+                    ||reverseSize.endsWith(patternData)
             )
             {
-                Log.d(Config.LOG_TAG,"pattern matched");
+                Log.d(Config.LOG_TAG,"pattern matched : "+patternData);
+                //showing dialog
+                /*try{
+                    try{alertDialogStat.dismiss();}catch (Exception e){e.printStackTrace();}
+                        alertDialogStat.show();
+                }catch (Exception e){e.printStackTrace();}
+                */
                 //Trigerring alarm
                 try {
                     if(mediaPlayer==null)
                     {
                         mediaPlayer = MediaPlayer.create(this, R.raw.alarm);
                     }else{
-                        mediaPlayer.stop();
-                        mediaPlayer.prepareAsync();
+                        if(!mediaPlayer.isPlaying()){mediaPlayer.start();}
+                        //mediaPlayer.stop();
+                        //mediaPlayer.prepareAsync();
                         //mediaPlayer.start();
                     }
-                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                        @Override
-                        public void onPrepared(MediaPlayer mediaPlayer) {
-                            mediaPlayer.start();
-                        }
-                    });
                 }catch (IllegalStateException e)
                 {
                     e.printStackTrace();
                 }
+                mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mediaPlayer) {
+                        mediaPlayer.start();
+                    }
+                });
+
                 //updating UI
                 pattern.setAlarmIsSet(true);
                 //break;
             }
+            else {
+                pattern.setAlarmIsSet(false);
+            }
         }
         patternListAdapter.notifyDataSetChanged();
+        savePatternsBeforeDestroy();
     }
 
     private String mergedPairsStatus()
@@ -521,9 +607,13 @@ public class MainActivity extends AppCompatActivity {
         return patternDataList;
     }
 
-    private void loadLottoData() {
+    private void loadLottoData(final long timeToSleep) {
         //countDownTimer.start();
-        MyDataFetcher.fetchData(this);
+        loadingTextView.setText(R.string.loading);
+        loadingTextView.setVisibility(View.VISIBLE);
+        MyDataFetcher myDataFetcher = new MyDataFetcher(this);
+        myDataFetcher.execute(String.valueOf(timeToSleep));
+
     }
 
     private void formatToDataAndRefreshView(String apiResult)
@@ -544,24 +634,32 @@ public class MainActivity extends AppCompatActivity {
                bills.add(billData);
             }
         }
-        checkPatternMatch();
-        arrayAdapter.notifyDataSetChanged();
-        updateUIData(bills);
-        loadingTextView.setVisibility(View.GONE);
-        dataListView.setVisibility(View.VISIBLE);
         try{
             countDownTimer.cancel();
         }catch (Exception e){e.printStackTrace();}
         countDownTimer = new MyCountDown(getRemaining(),1000);
         countDownTimer.start();
-    }
-
-    private long getFirstTimetoLaunch()
-    {
-        long currentTimeMillis = System.currentTimeMillis();
-        long remaining = getRemaining();
-        //alternating fecthing interval between 3:30 and 4:00;
-        return currentTimeMillis + remaining;
+        long tempsRestant = MINIMAL_TIME_FOR_ALARM;
+        try{
+            tempsRestant = countDownTimer.getTotalTime();
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        Log.d(Config.LOG_TAG,"temps restant est : "+tempsRestant);
+        if ((tempsRestant >= MINIMAL_TIME_FOR_ALARM) &&haveToCheck)
+        {
+            timeToSleep = 0;
+            checkPatternMatch();
+        }
+        haveToCheck = true;
+        arrayAdapter.notifyDataSetChanged();
+        updateUIData(bills);
+        loadingTextView.setVisibility(View.GONE);
+        dataListView.setVisibility(View.VISIBLE);
+        if (tempsRestant < MINIMAL_TIME_FOR_ALARM){
+            timeToSleep = 2000L;
+        }
     }
 
     private long getRemaining()
@@ -569,6 +667,7 @@ public class MainActivity extends AppCompatActivity {
         lastBillTime = mySharedPreferences.getLong("lastBillTime");
         long currentTime = System.currentTimeMillis();
         long rem = (lastBillTime + newDataInterval)-currentTime;
+        Log.d(Config.LOG_TAG,"last bill time is "+String.valueOf(new Date(lastBillTime)));
         return rem;
     }
 
@@ -609,8 +708,10 @@ public class MainActivity extends AppCompatActivity {
     SwipeRefreshLayout.OnRefreshListener refreshListener = new SwipeRefreshLayout.OnRefreshListener() {
         @Override
         public void onRefresh() {
-            loadingTextView.setVisibility(View.VISIBLE);
-            loadLottoData();
+            //loadingTextView.setText(R.string.loading);
+            //loadingTextView.setVisibility(View.VISIBLE);
+            haveToCheck = false;
+            loadLottoData(timeToSleep);
             //to stop animation
             //the android paging library I am using requires to do it manually
             new Handler().postDelayed(new Runnable() {
@@ -677,7 +778,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onFinish() {
             //countDownTimer.start();
-            MyDataFetcher.fetchData(MainActivity.this);
+            //MyDataFetcher.fetchData(MainActivity.this);
+            loadLottoData(timeToSleep);
+        }
+
+        public long getTotalTime() {
+            return totalTime;
         }
     }
 }

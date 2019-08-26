@@ -72,6 +72,12 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         }else {
             viewHolder.secondRoundedImageView.setImageResource(R.color.colorNonPair);
         }
+        if(sum<=13){
+            viewHolder.firstRoundedImageView.setImageResource(R.color.colorSmall);
+        }else {
+            viewHolder.firstRoundedImageView.setImageResource(R.color.colorBig);
+        }
+
         return convertView;
     }
 
@@ -83,6 +89,4 @@ public class MyDataAdapter extends ArrayAdapter<BillData> {
         //Log.d(Config.LOG_TAG,"dateformat is : "+string);
         return string;
     }
-
-
 }

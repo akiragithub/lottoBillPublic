@@ -10,7 +10,6 @@ public class MyAlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(final Context context, Intent intent) {
         Log.d(Config.LOG_TAG,"AlarmBroadcoast received ");
-        MyDataFetcher.fetchData(context);
+        //MyDataFetcher.fetchData(context,0);
     }
-
 }
